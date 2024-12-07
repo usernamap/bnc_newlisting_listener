@@ -32,24 +32,26 @@ async function fetchBinanceAnnouncements() {
             const title = announcement.text().trim();
             const link = announcement.attr("href");
 
-            if (link && link.includes("support/announcement") && title.includes("Binance listera")) {
+            if (link && link.includes("support/announcement")) {
                 const fullLink = "https://www.binance.com" + link;
-                const dateElement = announcement.next("div");
-                const dateStr = dateElement.length ? dateElement.text().trim() : "Date inconnue";
                 
-                let dateObj = null;
-                try {
-                    dateObj = new Date(dateStr);
-                } catch (error) {
-                    dateObj = null;
+                // On cherche la date qui est en dessous du titre avec une classe spécifique
+                let dateStr = "Date inconnue";
+                let dateElement = announcement.parent().next();
+                if (dateElement.length) {
+                    dateStr = dateElement.text().trim();
+                    // Vérifier si la chaîne correspond au format YYYY-MM-DD
+                    if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                        console.log(`[${new Date().toISOString()}] Date trouvée: ${dateStr} pour l'annonce: ${title}`);
+                    
+                        binanceListings.push({
+                            title,
+                            link: fullLink,
+                            date_str: dateStr,
+                            date_obj: new Date(dateStr)
+                        });
+                    }
                 }
-
-                binanceListings.push({
-                    title,
-                    link: fullLink,
-                    date_str: dateStr,
-                    date_obj: dateObj
-                });
             }
         });
 
@@ -66,7 +68,7 @@ async function fetchBinanceAnnouncements() {
             if (!a.date_obj && !b.date_obj) return 0;
             if (!a.date_obj) return 1;
             if (!b.date_obj) return -1;
-            return a.date_obj - b.date_obj; // Reverted back to ascending order
+            return a.date_obj - b.date_obj;
         });
     } catch (error) {
         console.error(`[${new Date().toISOString()}] Error fetching announcements:`, error);
