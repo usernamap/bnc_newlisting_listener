@@ -24,7 +24,11 @@ async function fetchBinanceAnnouncements() {
     try {
         const response = await axios.get(BINANCE_URL, { headers: HEADERS });
         const $ = cheerio.load(response.data);
-        const announcements = $("a");
+
+        // Debug: Afficher le HTML pour analyse
+        console.log("HTML reçu:", response.data);
+
+        const announcements = $("a"); // On commence par tous les liens
         const binanceListings = [];
 
         announcements.each((_, element) => {
@@ -32,25 +36,37 @@ async function fetchBinanceAnnouncements() {
             const title = announcement.text().trim();
             const link = announcement.attr("href");
 
-            if (link && link.includes("support/announcement")) {
-                const fullLink = "https://www.binance.com" + link;
-                
-                // On cherche la date qui est en dessous du titre avec une classe spécifique
-                let dateStr = "Date inconnue";
-                let dateElement = announcement.parent().next();
-                if (dateElement.length) {
-                    dateStr = dateElement.text().trim();
-                    // Vérifier si la chaîne correspond au format YYYY-MM-DD
-                    if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
-                        console.log(`[${new Date().toISOString()}] Date trouvée: ${dateStr} pour l'annonce: ${title}`);
-                    
-                        binanceListings.push({
-                            title,
-                            link: fullLink,
-                            date_str: dateStr,
-                            date_obj: new Date(dateStr)
-                        });
-                    }
+            // Debug: Afficher chaque lien trouvé
+            console.log("Lien trouvé:", {
+                title,
+                link,
+                html: announcement.parent().html()
+            });
+
+            // Si c'est un lien d'annonce valide
+            if (link && link.includes("/support/announcement/")) {
+                const fullLink = link.startsWith("http") ? link : "https://www.binance.com" + link;
+                // Chercher la date dans différents endroits possibles
+                let dateElement = announcement.parent().find("div").last();
+                if (!dateElement.length) {
+                    dateElement = announcement.next("div");
+                }
+                const dateStr = dateElement.text().trim();
+
+                console.log("Analyse d'annonce:", {
+                    title,
+                    link: fullLink,
+                    dateStr,
+                    dateElementHtml: dateElement.html()
+                });
+
+                if (dateStr && dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                    binanceListings.push({
+                        title,
+                        link: fullLink,
+                        date_str: dateStr,
+                        date_obj: new Date(dateStr)
+                    });
                 }
             }
         });
