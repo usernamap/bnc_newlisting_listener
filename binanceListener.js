@@ -61,12 +61,12 @@ async function fetchBinanceAnnouncements() {
             }, {})
         );
 
-        // Sort by date
+        // Sort by date in descending order (newest first)
         return uniqueListings.sort((a, b) => {
             if (!a.date_obj && !b.date_obj) return 0;
             if (!a.date_obj) return 1;
             if (!b.date_obj) return -1;
-            return a.date_obj - b.date_obj;
+            return b.date_obj - a.date_obj; // Changed order here
         });
     } catch (error) {
         console.error(`[${new Date().toISOString()}] Error fetching announcements:`, error);
@@ -91,7 +91,7 @@ async function saveSentItems(items) {
 
 // Main function to check and send new listings
 async function checkAndSendNewListings() {
-    console.log(`[${new Date().toISOString()}] Vérification des nouvelles annonces...`);
+    console.log(`[${new Date().toISOString()}] Vérification des nouvelles annonces (triées par date décroissante)...`);
     
     try {
         const sentItems = await loadSentItems();
